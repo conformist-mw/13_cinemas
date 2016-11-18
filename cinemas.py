@@ -1,5 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
+from requests.exceptions import Timeout, ConnectionError
+import sys
+import time
 
 
 def fetch_afisha_page():
@@ -17,9 +20,19 @@ def parse_afisha_list(raw_html):
 
 
 def get_rate_votes(movie):
+    s = requests.Session()
     url = 'http://kinopoisk.ru/index.php'
+    headers = {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36'}
     params = {'first': 'yes', 'kp_query': movie}
-    page = requests.get(url, params=params).content
+    print(params)
+    time.sleep(10)
+    try:
+        page = s.get(url, params=params,
+                     headers=headers, timeout=10).content
+    except (Timeout, ConnectionError):
+        print('Fuck, we\'re banned :(')
+        sys.exit('sorry, maybe try later? ^__^')
     soup = BeautifulSoup(page, 'lxml')
     rate = soup.find('span', class_='rating_ball')
     rate = float(rate.text) if rate else 0
