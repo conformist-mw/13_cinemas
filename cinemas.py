@@ -8,14 +8,12 @@ def fetch_afisha_page():
 
 
 def parse_afisha_list(raw_html):
-    movies = []
     soup = BeautifulSoup(raw_html, 'lxml')
     raw_divs = soup.find('div', id='schedule').find_all('div', class_='object')
     for div in raw_divs:
         movie_title = div.find('h3', {'class': 'usetags'}).a.text
-        cinemas = len(div.find('table').find_all('tr'))
-        movies.append([movie_title, cinemas])
-    return movies
+        cinemas_num = len(div.find('table').find_all('tr'))
+        yield {'title': movie_title, 'cinemas': cinemas_num}
 
 
 def get_rate_votes(movie):
@@ -26,31 +24,31 @@ def get_rate_votes(movie):
     rate = soup.find('span', class_='rating_ball')
     rate = float(rate.text) if rate else 0
     votes = soup.find('span', class_='ratingCount')
-    votes = int(votes.text.replace('\xa0', '')) if votes else 0
-    return rate, votes
+    votes_num = int(votes.text.replace('\xa0', '')) if votes else 0
+    return {'rate': rate, 'votes': votes_num}
 
 
-def collect_info(movies):
-    movies_info = []
-    for movie, cinemas in movies:
-        rate, votes = get_rate_votes(movie)
-        movies_info.append({'title': movie,
-                            'rate': rate,
-                            'cinemas': cinemas,
-                            'votes': votes})
-    return movies_info
+def collect_info(raw_html):
+    movies_list = []
+    for movie in parse_afisha_list(raw_html):
+        movie_rate = get_rate_votes(movie['title'])
+        movies_list.append({'title': movie['title'],
+                            'cinemas': movie['cinemas'],
+                            'rate': movie_rate['rate'],
+                            'votes': movie_rate['votes']
+                            })
+    return movies_list
 
 
-def sort_movies(movies):
-    return sorted(movies, key=lambda x: (x['rate'], x['cinemas']),
-                  reverse=True)[:10]
+def output_to_console(movies_list, amount):
+    best_movies = sorted(movies_list, key=lambda x: x['rate'])[:amount]
+    for line, movie in enumerate(best_movies, 1):
+        print('{}. {}\t{}\t{}\t{}'.format(
+            line, movie['title'], movie['rate'],
+            movie['cinemas'], movie['votes']))
 
 
 if __name__ == '__main__':
     raw_html = fetch_afisha_page()
-    movies = parse_afisha_list(raw_html)
-    movies_info = collect_info(movies)
-    for line, movie in enumerate(sort_movies(movies_info), 1):
-        print('{}. {}\t{}\t{}\t{}'.format(
-            line, movie['title'], movie['rate'],
-            movie['cinemas'], movie['votes']))
+    movies_list = collect_info(raw_html)
+    output_to_console(movies_list, 10)
