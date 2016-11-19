@@ -25,14 +25,12 @@ def get_rate_votes(movie):
     headers = {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36'}
     params = {'first': 'yes', 'kp_query': movie}
-    print(params)
     time.sleep(10)
     try:
         page = s.get(url, params=params,
                      headers=headers, timeout=10).content
     except (Timeout, ConnectionError):
-        print('Fuck, we\'re banned :(')
-        sys.exit('sorry, maybe try later? ^__^')
+        sys.exit('Maybe we\'re banned, try later')
     soup = BeautifulSoup(page, 'lxml')
     rate = soup.find('span', class_='rating_ball')
     rate = float(rate.text) if rate else 0
@@ -54,8 +52,8 @@ def collect_info(raw_html):
 
 
 def output_to_console(movies_list, amount):
-    best_movies = sorted(movies_list, key=lambda x: x['rate'])[:amount]
-    for line, movie in enumerate(best_movies, 1):
+    best_movies = sorted(movies_list, key=lambda x: x['rate'])[-amount:]
+    for line, movie in enumerate(reversed(best_movies), 1):
         print('{}. {}\t{}\t{}\t{}'.format(
             line, movie['title'], movie['rate'],
             movie['cinemas'], movie['votes']))
